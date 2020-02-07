@@ -1,17 +1,12 @@
 # Chicago Rideshare Analysis
 
-Repository for Data Engineering Platforms final project at the University of Chicago. Created by @ltyomkin, @luisflosi, @minhahoang, and @sarahdudek 
+Repository for Data Engineering Platforms final project at the University of Chicago. Created by @lucia-ronchi, @luisflosi, @zhang6217, and @sarahdudek 
 
 This project is a look at the impact of rideshare transportation on traffic in the city of Chicago. Our goal is to compare pre-rideshare taxi trip data with current rideshare data. We will also cross-reference this data with CTA train and bus stops.
 
 ## Questions to Answer
 
-- What is the impact of Transportation Network Providers on traffic congestion in Chicago?
-- Are there trends in heavy congestion at certain times/days? How does that congestion behave before and after rideshare traffic was introduced to Chicago?
-- How and where are rideshare companies such as Uber, Lyft and Via increasing and decreasing the flow of automobile traffic?
-- What are the differences between taxi vs rideshare for trip duration, fares, and frequency?
-- What kinds of events trigger an increase or decrease in congestion?
-
+- Understanding the tipping behavior of ride share passanges and taxi passangers
 
 ## Our Tech Stack
 
