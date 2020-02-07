@@ -1,0 +1,49 @@
+###############  Steps for GCP  ##############
+
+Create instance (32 CPUs 208 GB memory with 512 HD):
+	- Note: required a request for cap upgrade from GCP because cap was 20 CPUs
+
+SSH into instance
+
+Setup instance:
+	#Drivers
+	sudo apt-get update
+	#Git
+	sudo apt-get install git
+	#Python
+	sudo apt-get install bzip2 libxml2-dev
+	wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+	bash Miniconda3-latest-Linux-x86_64.sh
+	rm Miniconda3-latest-Linux-x86_64.sh
+	. ~/.bashrc
+	conda install scikit-learn pandas jupyter ipython
+
+Get repository:
+	git clone https://github.com/ltyomkin/Chicago-Rideshare-Analysis.git
+
+Import files (already in bucket):
+	gsutil cp gs://rideshare-csvs/* ~/
+
+Make scripts executable:
+	chmod +x ~/Chicago-Rideshare-Analysis/Cleaning_Code/*
+
+
+To run scripts automatically, run auto_pipeline.sh
+
+######### Steps to run scripts one by one ################################
+Run scripts (this way we can close the terminal and it will keep running)
+	nohup python ~/Chicago-Rideshare-Analysis/Cleaning_Code/<SCRIPT>.py &
+	<ENTER>
+	- Note: to check for errors and other messages, look inside nohup.out by calling "cat nohup.out"
+
+Check if scripts are still running
+	ps -ef | grep "file name"
+
+Check if files have been exported correctly
+	ls -l
+
+With the process ID from ps -ef, check memory usage:
+	sudo pmap <PID> | tail -n 1
+Or just use this command to see updated memory usage by computations or cache:
+	watch free -m
+	(to exit, ctrl+c)
