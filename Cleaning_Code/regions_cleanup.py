@@ -1,5 +1,4 @@
 import pandas as pd
-import re
 
 regions_df = pd.read_csv("~/regions.csv")
 
