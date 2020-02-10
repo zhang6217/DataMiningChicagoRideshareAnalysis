@@ -13,4 +13,4 @@ trips_final[["tolls","extra_charges"]] = trips_final[["tolls","extra_charges"]].
 
 trips_final.dropna(axis = 0, inplace = True) # Removing trips that involve pickup or dropoff outside Chicago (have null centroids)
 
-trips_final.to_csv(r"~/final_trips.csv", header = False) # Actual table to be inserted into trips table in DW
+trips_final.to_csv(r"~/final_trips.csv") # Actual table to be inserted into trips table in DW
