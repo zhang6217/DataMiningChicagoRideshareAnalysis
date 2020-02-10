@@ -79,60 +79,8 @@ traffic_from2018 = filled_df[["region_id",
                               "bus_count",
                               "gps_pings"]]
 
-# Load upto2018
 
-traffic_upto2018_df = pd.read_csv("~/region_traffic_upto_2018.csv")
-
-# Change column names
-
-traffic_upto2018_df.columns = ["timestamp_id",
-                               "region_id",
-                               "bus_count",
-                               "gps_pings",
-                               "speed"]
-
-# Change datetime
-
-traffic_upto2018_df.timestamp_id = pd.to_datetime(traffic_upto2018_df.timestamp_id)
-
-# Filter out dates
-min_date = '2014-01-01'
-max_date = '2018-02-27'
-traffic_upto2018_df = traffic_upto2018_df[(traffic_upto2018_df['timestamp_id'] >= min_date) &
-                                          (traffic_upto2018_df['timestamp_id'] <= max_date)]
-
-# Aggregate timestamp by hour
-
-traffic_upto2018_df = traffic_upto2018_df.set_index('timestamp_id')
-
-traffic_upto2018_df = traffic_upto2018_df.groupby(["region_id"]).resample("H").agg({
-                                                                'bus_count' : 'sum',
-                                                                'gps_pings' : 'sum',
-                                                                'speed' : 'mean'}).ffill()
-
-traffic_upto2018_df = traffic_upto2018_df.reset_index()
-
-# Fill missing hours
-
-filled_df = (traffic_upto2018_df.set_index('timestamp_id')
-             .groupby('region_id')
-             .apply(lambda d: d.reindex(pd.date_range(min(traffic_upto2018_df.timestamp_id),
-                                                      max(traffic_upto2018_df.timestamp_id),
-                                                      freq='H')))
-             .drop('region_id', axis=1)
-             .reset_index('region_id')
-             .ffill())
-             
-traffic_upto2018 = filled_df.fillna(value = fill_values)
-
-# Reorder columns
-traffic_upto2018["timestamp_id"] = filled_df.index
-traffic_upto2018 = traffic_upto2018.reset_index()
-traffic_upto2018 = traffic_upto2018[["region_id","timestamp_id","speed","bus_count","gps_pings"]]
-
-# Join with upto2018
-
-traffic_full = pd.concat([traffic_upto2018,traffic_from2018], ignore_index = True)
+traffic_full = traffic_from2018
     
 # Add speed category
 def speed_condition(c):
@@ -154,4 +102,4 @@ traffic_full = traffic_full[["region_id","timestamp_id","speed","speed_category"
 
 # Export final traffic data
 
-traffic_full.to_csv(r"~/clean_full_traffic_data.csv", header = False)
+traffic_full.to_csv(r"~/clean_full_traffic_data.csv")
