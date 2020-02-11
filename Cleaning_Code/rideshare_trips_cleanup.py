@@ -27,6 +27,15 @@ new_column_names = ["trip_id",
 
 rideshare_trips_df = rideshare_trips_df.drop(columns_to_delete, axis = 1)
 rideshare_trips_df.columns = new_column_names
+
+start_date = "2019-1-1"
+end_date = "2019-12-31"
+
+between_two_dates = rideshare_trips_df["taxi_trip_df.start_timestamp_id"] >= start_date & rideshare_trips_df["taxi_trip_df.end_timestamp_id"] <= end_date
+rideshare_trips_df = rideshare_trips_df.loc[between_two_dates]
+
+rideshare_trips_df.sample(frac = 0.05, random_state = 272020)
+
 rideshare_trips_df["tolls"] = 0
 rideshare_trips_df["ride_type_id"] = 2
 rideshare_trips_df["payment_type"] = "app"

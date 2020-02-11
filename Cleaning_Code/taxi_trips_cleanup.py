@@ -29,6 +29,18 @@ new_column_names = ["trip_id",
 
 taxi_trip_df = taxi_trip_df.drop(columns_to_delete, axis = 1)
 taxi_trip_df.columns = new_column_names
+
+taxi_trip_df.start_timestamp_id = pd.to_datetime(taxi_trip_df.start_timestamp_id)
+taxi_trip_df.end_timestamp_id = pd.to_datetime(taxi_trip_df.end_timestamp_id)
+
+start_date = "2019-1-1"
+end_date = "2019-12-31"
+
+between_two_dates = taxi_trip_df["taxi_trip_df.start_timestamp_id"] >= start_date & taxi_trip_df["taxi_trip_df.end_timestamp_id"] <= end_date
+taxi_trip_df = taxi_trip_df.loc[between_two_dates]
+
+taxi_trip_df.sample(frac = 0.05, random_state = 272020)
+
 taxi_trip_df["ride_type_id"] = 1
 
 taxi_trip_df = taxi_trip_df[["trip_id",
@@ -47,9 +59,6 @@ taxi_trip_df = taxi_trip_df[["trip_id",
                 "end_census_tract",
                 "pickup_centroid_location",
                 "dropoff_centroid_location"]]
-
-taxi_trip_df.start_timestamp_id = pd.to_datetime(taxi_trip_df.start_timestamp_id)
-taxi_trip_df.end_timestamp_id = pd.to_datetime(taxi_trip_df.end_timestamp_id)
 
 def hour_rounder(t):
   return (t.dt.floor('H'))
