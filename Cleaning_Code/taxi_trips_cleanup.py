@@ -36,7 +36,7 @@ taxi_trip_df.end_timestamp_id = pd.to_datetime(taxi_trip_df.end_timestamp_id)
 start_date = "2019-1-1"
 end_date = "2019-12-31"
 
-between_two_dates = taxi_trip_df["taxi_trip_df.start_timestamp_id"] >= start_date & taxi_trip_df["taxi_trip_df.end_timestamp_id"] <= end_date
+between_two_dates = taxi_trip_df["start_timestamp_id"] >= start_date & taxi_trip_df["end_timestamp_id"] <= end_date
 taxi_trip_df = taxi_trip_df.loc[between_two_dates]
 
 taxi_trip_df.sample(frac = 0.05, random_state = 272020)
