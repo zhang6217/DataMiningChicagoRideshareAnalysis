@@ -31,13 +31,11 @@ rideshare_trips_df.columns = new_column_names
 rideshare_trips_df.start_timestamp_id = pd.to_datetime(rideshare_trips_df.start_timestamp_id)
 rideshare_trips_df.end_timestamp_id = pd.to_datetime(rideshare_trips_df.end_timestamp_id)
 
-<<<<<<< HEAD
 start_date = pd.to_datetime("2019-01-01")
 end_date = pd.to_datetime("2019-12-31")
-=======
+
 start_date = "2019-01-01"
 end_date = "2019-12-31"
->>>>>>> ce3566776f2680abea75ac3faa476fc11ba19b6c
 
 between_two_dates = (rideshare_trips_df["start_timestamp_id"] >= start_date) & (rideshare_trips_df["end_timestamp_id"] <= end_date)
 rideshare_trips_df = rideshare_trips_df.loc[between_two_dates]
