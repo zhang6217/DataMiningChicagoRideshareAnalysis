@@ -33,13 +33,13 @@ taxi_trip_df.columns = new_column_names
 taxi_trip_df.start_timestamp_id = pd.to_datetime(taxi_trip_df.start_timestamp_id)
 taxi_trip_df.end_timestamp_id = pd.to_datetime(taxi_trip_df.end_timestamp_id)
 
-start_date = "2019-1-1"
-end_date = "2019-12-31"
+start_date = pd.to_datetime("2019-01-01")
+end_date = pd.to_datetime("2019-12-31")
 
-between_two_dates = taxi_trip_df["start_timestamp_id"] >= start_date & taxi_trip_df["end_timestamp_id"] <= end_date
+between_two_dates = (taxi_trip_df["start_timestamp_id"] >= start_date) & (taxi_trip_df["end_timestamp_id"] <= end_date)
 taxi_trip_df = taxi_trip_df.loc[between_two_dates]
 
-taxi_trip_df.sample(frac = 0.05, random_state = 272020)
+taxi_trip_df = taxi_trip_df.sample(frac = 0.05, random_state = 272020)
 
 taxi_trip_df["ride_type_id"] = 1
 

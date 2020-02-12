@@ -28,20 +28,23 @@ new_column_names = ["trip_id",
 rideshare_trips_df = rideshare_trips_df.drop(columns_to_delete, axis = 1)
 rideshare_trips_df.columns = new_column_names
 
-start_date = "2019-1-1"
-end_date = "2019-12-31"
+rideshare_trips_df.start_timestamp_id = pd.to_datetime(rideshare_trips_df.start_timestamp_id)
+rideshare_trips_df.end_timestamp_id = pd.to_datetime(rideshare_trips_df.end_timestamp_id)
 
-between_two_dates = rideshare_trips_df["start_timestamp_id"] >= start_date & rideshare_trips_df["end_timestamp_id"] <= end_date
+start_date = pd.to_datetime("2019-01-01")
+end_date = pd.to_datetime("2019-12-31")
+
+between_two_dates = (rideshare_trips_df["start_timestamp_id"] >= start_date) & (rideshare_trips_df["end_timestamp_id"] <= end_date)
 rideshare_trips_df = rideshare_trips_df.loc[between_two_dates]
 
-rideshare_trips_df.sample(frac = 0.05, random_state = 272020)
+rideshare_trips_df = rideshare_trips_df.sample(frac = 0.05, random_state = 272020)
 
 rideshare_trips_df["tolls"] = 0
 rideshare_trips_df["ride_type_id"] = 2
 rideshare_trips_df["payment_type"] = "app"
 
 rideshare_trips_df = rideshare_trips_df[["trip_id",
-                                         "ride_type_id",
+                                        "ride_type_id",
                                          "start_timestamp_id",
                                          "end_timestamp_id",
                                          "duration_seconds",
@@ -56,9 +59,6 @@ rideshare_trips_df = rideshare_trips_df[["trip_id",
                                          "end_census_tract",
                                          "pickup_centroid_location",
                                          "dropoff_centroid_location"]]
-
-rideshare_trips_df.start_timestamp_id = pd.to_datetime(rideshare_trips_df.start_timestamp_id)
-rideshare_trips_df.end_timestamp_id = pd.to_datetime(rideshare_trips_df.end_timestamp_id)
 
 def hour_rounder(t):
   return (t.dt.floor('H'))
