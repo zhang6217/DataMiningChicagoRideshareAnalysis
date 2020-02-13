@@ -63,10 +63,6 @@ rideshare_trips_df = rideshare_trips_df[["trip_id",
                                          "pickup_centroid_location",
                                          "dropoff_centroid_location"]]
 
-<<<<<<< HEAD
-=======
-
->>>>>>> ce3566776f2680abea75ac3faa476fc11ba19b6c
 def hour_rounder(t):
   return (t.dt.floor('H'))
 
