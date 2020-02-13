@@ -8,7 +8,7 @@ base_regions.columns = base_regions.columns.to_series().apply(lambda x: x.strip(
 
 base_regions = base_regions[["region_id",
                      "lat_centroid",
-                     "lon_centroid"]]
+                     "long_centroid"]]
 
 base_regions.dropna()
 
@@ -65,7 +65,7 @@ for trip_r in range(len(reg)):
     t_r_id = reg["trip_region_id"][trip_r]
     distances = []
     for base_r in range(len(base_regions)):
-        distances.append(haversine((base_regions["lon_centroid"][base_r], base_regions["lat_centroid"][base_r]),
+        distances.append(haversine((base_regions["long_centroid"][base_r], base_regions["lat_centroid"][base_r]),
                                    (reg["trip_longitude"][trip_r], reg["trip_latitude"][trip_r])))
     distance_dic[t_r_id] = distances
 
