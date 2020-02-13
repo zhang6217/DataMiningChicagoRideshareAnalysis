@@ -40,8 +40,8 @@ traffic_from2018_df = traffic_from2018_df.drop(["hour",
 traffic_from2018_df.timestamp_id = pd.to_datetime(traffic_from2018_df.timestamp_id)
 
 # Filter out dates
-min_date = '2018-02-28'
-max_date = '2018-10-31'
+min_date = '2019-01-01'
+max_date = '2019-12-31'
 traffic_from2018_df = traffic_from2018_df[(traffic_from2018_df['timestamp_id'] >= min_date) &
                         (traffic_from2018_df['timestamp_id'] <= max_date)]
 
