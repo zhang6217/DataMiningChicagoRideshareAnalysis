@@ -1,0 +1,48 @@
+import pandas as pd
+
+# Check and import data
+final_trips=pd.DataFrame(pd.read_csv("WIP_data_merge_files_final_trips.csv"))
+dim_date=pd.DataFrame(pd.read_csv("WIP_data_merge_files_dim_date.csv"))
+trip_lookup=pd.DataFrame(pd.read_csv("WIP_data_merge_files_trip_region_lookup.csv"))
+traffic=pd.DataFrame(pd.read_csv("WIP_data_merge_files_traffic_data.csv"))
+clean_region=pd.DataFrame(pd.read_csv("WIP_data_merge_files_Copy of clean_regions.csv"))
+
+
+#Join trip data with time data
+##Merge first using start_timestamp_id
+merged_result=pd.DataFrame()
+merged_result=pd.merge(final_trips,dim_date, left_on="start_timestamp_id",right_on="timestamp_id", how="left").drop(columns="timestamp_id")
+merged_result.rename(columns={'time': 'start_time', 'date': 'start_date', "month":"start_month", "year":"start_year","weekday":"start_weekday"}, inplace=True)
+
+##Merge again using end_timestamp_id
+merged_result=pd.merge(merged_result,dim_date,left_on="end_timestamp_id",right_on="timestamp_id", how="left").drop(columns="timestamp_id")
+merged_result.rename(columns={'time': 'end_time', 'date': 'end_date', "month":"end_month", "year":"end_year","weekday":"end_weekday"}, inplace=True)
+
+
+#Join the merged result with trip_lookup table
+##Merge using pickup_centroid_location
+merged_result2=pd.merge(merged_result,trip_lookup, 
+                        left_on="pickup_centroid_location",right_on="trip_centroids", how="left")
+merged_result2.rename(columns={"trip_region_id":"pickup_trip_region_id", "base_region_id":"pickup_base_region_id"}, inplace=True)
+merged_result2=merged_result2.iloc[:,0:27] #drop last column which is trip_centroids
+
+###Merge again using dropoff_centroid_location
+merged_result2=pd.merge(merged_result2,trip_lookup, 
+                        left_on="dropoff_centroid_location",right_on="trip_centroids", how="left")
+merged_result2.rename(columns={"trip_region_id":"dropoff_trip_region_id", 
+                               "base_region_id":"dropoff_base_region_id"}, inplace=True)
+merged_result2=merged_result2.iloc[:,0:29] #drop centroids_location
+
+
+#Merge the merged result2 with traffic table
+##Merge using start_timestamp_id and pickup_trip_region_id
+merged_result3=pd.merge(merged_result2, traffic, 
+                        left_on=['start_timestamp_id', 'pickup_base_region_id'],
+                        right_on=['timestamp_id', 'region_id'], how="left")
+merged_final=merged_result3.drop(columns="timestamp_id").drop(columns="region_id")
+merged_final=merged_final.drop(columns=["Unnamed: 0_x", "Unnamed: 0_y"])
+
+##Write final csv file
+merged_final.to_csv('finalMerge.csv')
+
+
