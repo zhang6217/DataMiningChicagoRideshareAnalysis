@@ -17,4 +17,5 @@ date_data['year'] = date_data['timestamp_id'].dt.year
 dayOfWeek={0:'Monday', 1:'Tuesday', 2:'Wednesday', 3:'Thursday', 4:'Friday', 5:'Saturday', 6:'Sunday'}
 date_data['weekday'] = date_data['timestamp_id'].dt.dayofweek.map(dayOfWeek)
 
-date_data.to_csv("~/dim_date.csv",index = False)
+date_data.to_csv("~/dim_date.csv",index = False )
+
