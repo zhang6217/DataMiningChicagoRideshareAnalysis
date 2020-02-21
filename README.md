@@ -1,6 +1,6 @@
 # Chicago Rideshare Analysis
 
-Repository for Data Engineering Platforms final project at the University of Chicago. Created by @lucia-ronchi, @luisflosi, @zhang6217, and @sarahdudek 
+Repository for Data Mining Principles final project at the University of Chicago. Created by @lucia-ronchi, @luisflosi, @zhang6217, and @SophieHuGit
 
 This project is a look at the impact of rideshare transportation on traffic in the city of Chicago. Our goal is to compare pre-rideshare taxi trip data with current rideshare data. We will also cross-reference this data with CTA train and bus stops.
 
