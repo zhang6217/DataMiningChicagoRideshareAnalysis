@@ -1,0 +1,20 @@
+import csv
+from collections import defaultdict
+
+with open('fileNameA.csv') as f:
+    r = csv.reader(f, delimiter=',')
+    dict1 = {}
+    for row in r:
+        dict1.update({row[0]: row[1:]})  ##Assume the first column is the key
+
+with open('fileNameB.csv') as f:
+    r = csv.reader(f, delimiter=',')
+    dict2 = {}
+    for row in r:
+        dict2.update({row[0]: row[1:]})  ##Assume the first column is the key
+
+result=defaultdict(list)
+
+for d in (dict1, dict2):
+    for key, value in d.iteritems():
+        result[key].append(value)
