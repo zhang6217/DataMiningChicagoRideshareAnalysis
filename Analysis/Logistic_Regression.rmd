@@ -24,7 +24,7 @@ library(AUC)
 
 Load data:
 ```{r}
-data <- read.csv("tiny_sample.csv")
+data <- read.csv("../../tiny_sample.csv")
 ```
 
 ```{r}
@@ -118,7 +118,7 @@ In order to pick the right threshold, gains chart is calcualted:
                      groups = 20))
 ```
 
-# 5. Predictions
+# 5. Predictions in Train
 
 Predict based on the reduced model:
 ```{r}
@@ -265,6 +265,19 @@ confusionMatrix(data = predicted.class.train, reference = data.train$tip_flag,
                 positive = "No", mode = "everything")
 ```
 
+# 10. Saving results
+
+Convert "Yes" and "No" to 1 and 0, respectivelly:
+```{r}
+levels(predicted.class.train) <- c(1, 0)
+levels(predicted.class.test) <- c(1, 0)
+```
+
+Save predictions:
+```{r}
+saveRDS(object = predicted.class.train, "logis.predicted.tip.train.rds")
+saveRDS(object = predicted.class.test, "logis.predicted.tip.test.rds")
+```
 
 
 
