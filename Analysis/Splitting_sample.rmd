@@ -1,0 +1,39 @@
+---
+title: "Untitled"
+author: "Lucia Ronchi Darre"
+date: "3/5/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load data:
+```{r}
+data <- read.csv("tiny_sample.csv")
+```
+
+
+Split the data into train (70%) and test (30%)
+```{r}
+# Set seed
+set.seed(232323)
+# Set train set size (70%)
+sample.size <- floor(0.70*nrow(data))
+# Create indeces of rows to sample
+sample.indeces <- sample.int(n = nrow(data), size = sample.size)
+# Create train and test sets according to these sample indices
+data.train <- data[sample.indeces, ]
+data.test <- data[-sample.indeces, ]
+```
+
+Save as csv:
+```{r}
+write.csv(data.train, "tiny_sample_train.csv")
+write.csv(data.test, "tiny_sample_test.csv")
+```
+
+
+
+
