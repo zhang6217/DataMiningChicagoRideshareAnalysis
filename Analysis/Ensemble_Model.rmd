@@ -1,0 +1,47 @@
+---
+title: "Ensemble Model"
+author: "Lucia Ronchi Darre"
+date: "3/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Load predictions from other models
+
+Logistic Regression:
+```{r}
+
+```
+
+KNN:
+```{r}
+
+```
+
+
+LCA Regression:
+```{r}
+
+```
+
+Random Forest:
+```{r}
+
+```
+
+# 2. Building the ensemble Model
+
+# 3. Predicting Train Values
+
+# 4. Predicting Test Values
+
+# 5. Perfomance Metrics
+
+
+
+
+
+
