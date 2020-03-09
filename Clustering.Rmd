@@ -1,0 +1,621 @@
+---
+title: ''
+author: "MiaoxuanZhang"
+date: "2/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+cleaned_data <- read_csv("~/Desktop/Data Mining/Project/tiny_sample.csv")
+head(cleaned_data)
+```
+
+```{r}
+#Change variable types
+cleaned_data[,"duration_seconds"]=as.numeric(unlist(cleaned_data[,"duration_seconds"]))
+cleaned_data[,"miles"]=as.numeric(unlist(cleaned_data[,"miles"]))
+cleaned_data[,"fare"]=as.numeric(unlist(cleaned_data[,"fare"]))
+cleaned_data[,"tip"]=as.numeric(unlist(cleaned_data[,"tip"]))
+cleaned_data[,"tolls"]=as.numeric(unlist(cleaned_data[,"tolls"]))
+cleaned_data[,"extra_charges"]=as.numeric(unlist(cleaned_data[,"extra_charges"]))
+cleaned_data[,"trip_total"]=as.numeric(unlist(cleaned_data[,"trip_total"]))
+cleaned_data[,"speed_pickup_start"]=as.numeric(unlist(cleaned_data[,"speed_pickup_start"]))
+cleaned_data[,"bus_count_pickup_start"]=as.numeric(unlist(cleaned_data[,"bus_count_pickup_start"]))
+cleaned_data[,"gps_pings_pickup_start"]=as.numeric(unlist(cleaned_data[,"gps_pings_pickup_start"]))
+cleaned_data[,"speed_dropoff_end"]=as.numeric(unlist(cleaned_data[,"speed_dropoff_end"]))
+cleaned_data[,"bus_count_dropoff_end"]=as.numeric(unlist(cleaned_data[,"bus_count_dropoff_end"]))
+cleaned_data[,"gps_pings_dropoff_end"]=as.numeric(unlist(cleaned_data[,"gps_pings_dropoff_end"]))
+cleaned_data[,"total_no_tip"]=as.numeric(unlist(cleaned_data[,"total_no_tip"]))
+
+cleaned_data[,"tip_flag"]=as.factor(unlist(cleaned_data[,"tip_flag"]))
+cleaned_data[,"flag_overnight"]=as.factor(unlist(cleaned_data[,"flag_overnight"]))
+cleaned_data[,"flag_overnight"]=as.factor(unlist(cleaned_data[,"flag_overnight"]))
+cleaned_data[,"flag_weekend"]=as.factor(unlist(cleaned_data[,"flag_weekend"]))
+head(cleaned_data)
+```
+
+
+
+```{r}
+cleaned_data=as.data.frame(cleaned_data)
+cleaned_data=na.omit(cleaned_data)
+head(cleaned_data)
+```
+
+#K mean clustering
+Split test and sample
+```{r}
+require(caTools)
+set.seed(232323)
+
+#select only numeric variables
+quant_data=cleaned_data[,c("duration_seconds","miles","fare","extra_charges","trip_total","speed_pickup_start","bus_count_pickup_start","gps_pings_pickup_start","speed_dropoff_end","bus_count_dropoff_end","gps_pings_dropoff_end")]
+sample = sample.split(quant_data[,"duration_seconds"], SplitRatio = .7)
+
+train = subset(quant_data, sample == TRUE)
+test  = subset(quant_data, sample == FALSE)
+
+trainS=scale(train)
+testS=scale(test,center = colMeans(train),scale = apply(train,2,sd))
+
+```
+
+Calculate Kmeans and corresponding VAF
+```{r}
+res <- as.data.frame(matrix(nrow=8,ncol=3))
+colnames(res) <- c("k", "train.VAF","holdout.VAF")
+rownames(res)<-c()
+n=1
+
+for (k in seq(2,10)){
+        res[n,"k"]=k
+        km.train <- kmeans(trainS, algorithm="Lloyd",centers = k, nstart = 50,iter.max=100)
+        res[n,"train.VAF"] <- 1 - km.train$tot.withinss / km.train$totss
+        km.holdout <- kmeans(testS, centers = km.train$centers,algorithm="Lloyd", nstart = 1,iter.max=100)
+        res[n,"holdout.VAF"] <- 1 - km.holdout$tot.withinss / km.holdout$totss
+        n=n+1
+}
+res
+
+```
+All results above are not converged since I set maximum number of iterations to 100. 
+
+Let us see the scree plot for now.
+```{r}
+plot(res$k,res$train.VAF,type = 'b',col = 'blue', xlab = 'Number of clusters',
+                ylab = 'Variance Accounted For', main="Scree plot for VAF (KMeans)")
+lines(res$k, res$holdout.VAF, type = 'b', col = 'red')
+legend(x='bottomright',legend = c('Training VAF','Holdout VAF'), 
+                lty = c(1,1),
+                col = c('blue','red'))
+```
+
+Select k=4 without maximum iteration and run kmeans again
+```{r}
+km.train.4 <- kmeans(trainS, algorithm="Lloyd",centers = 4, nstart = 50, iter.max=1000)
+km.train.4.VAF=1 - km.train.4$tot.withinss / km.train.4$totss
+km.train.4.VAF
+```
+Even though km.train.7 is now converged. VAF is still very very bad.
+```{r}
+head(km.train.4$centers)
+```
+
+But let us still plot to see cluster means
+```{r}
+library(reshape2)
+library(ggpubr)
+head(km.train.4$centers)
+trainMatrix=as.data.frame(matrix(nrow=11, ncol=5))
+
+trainMatrix[,2:5]=as.data.frame(t(km.train.4$centers))
+trainMatrix[,1]=c("duration_seconds","miles","fare","extra_charges","trip_total","speed_pickup_start","bus_count_pickup_start","gps_pings_pickup_start","speed_dropoff_end","bus_count_dropoff_end","gps_pings_dropoff_end")
+colnames(trainMatrix) = c("ClusterName","ClusterOne","ClusterTwo","ClusterThree","ClusterFour")
+
+trainMatrix<-melt(trainMatrix,id.vars="ClusterName")
+
+ggplot(trainMatrix, aes(x=ClusterName,y=value, colour=variable, group=variable )) + geom_line()+geom_point(size = 3)+ggtitle("Training data centers 4 clusters Kmeans")+ theme(plot.title = element_text(hjust=0.5, size=15),axis.text.x = element_text(angle=55, hjust=1))
+```
+It seems like cluster two has a lot of outliers. Let us try to plot without cluster two
+```{r}
+trainMatrix=as.data.frame(matrix(nrow=13, ncol=7))
+
+trainMatrix[,2:8]=as.data.frame(t(km.train.7$centers[c(1,3,4,5,6,7),]))
+trainMatrix[,1]=c("duration_seconds","miles","tip","fare","tolls","extra_charges","trip_total","speed_pickup_start","bus_count_pickup_start","gps_pings_pickup_start","speed_dropoff_end","bus_count_dropoff_end","gps_pings_dropoff_end")
+colnames(trainMatrix) = c("ClusterName","ClusterOne","ClusterTwo","ClusterThree","ClusterFour","ClusterFive","ClusterSix","ClusterSeven")
+
+trainMatrix<-melt(trainMatrix,id.vars="ClusterName")
+
+ggplot(trainMatrix, aes(x=ClusterName,y=value, colour=variable, group=variable )) + geom_line()+geom_point(size = 3)+ggtitle("Training data centers 7 clusters Kmeans")+ theme(plot.title = element_text(hjust=0.5, size=15),axis.text.x = element_text(angle=55, hjust=1))
+```
+
+Now let us select **fare** related variables
+```{r}
+head(cleaned_data)
+
+```
+Split into train and sample one more time
+```{r}
+require(caTools)
+set.seed(232323)
+
+#select only numeric variables
+quant_data=cleaned_data[,c("duration_seconds","miles","tip","extra_charges","total_no_tip")]
+sample = sample.split(quant_data, SplitRatio = .7)
+
+train = subset(quant_data, sample == TRUE)
+test  = subset(quant_data, sample == FALSE)
+
+trainS=scale(train)
+testS=scale(test,center = colMeans(train),scale = apply(train,2,sd))
+
+```
+
+Now let us train the model again
+```{r}
+res.2 <- as.data.frame(matrix(nrow=8,ncol=3))
+colnames(res.2) <- c("k", "train.VAF","holdout.VAF")
+rownames(res.2)<-c()
+n=1
+
+for (k in seq(2,5)){
+        res.2[n,"k"]=k
+        km.train <- kmeans(trainS, algorithm="Lloyd",centers = k, nstart = 50,iter.max=100)
+        res.2[n,"train.VAF"] <- 1 - km.train$tot.withinss / km.train$totss
+        km.holdout <- kmeans(testS, centers = km.train$centers,algorithm="Lloyd", nstart = 1,iter.max=100)
+        res.2[n,"holdout.VAF"] <- 1 - km.holdout$tot.withinss / km.holdout$totss
+        n=n+1
+}
+res.2
+```
+
+Let us select k=6
+```{r}
+km.train.6 <- kmeans(trainS, algorithm="Lloyd",centers = 6, nstart = 50, iter.max=1000)
+km.train.6.VAF=1 - km.train.6$tot.withinss / km.train.6$totss
+km.train.6.VAF
+```
+
+Let us plot to analyze the centers
+```{r}
+library(reshape2)
+library(ggpubr)
+trainMatrix=as.data.frame(matrix(nrow=5, ncol=7))
+
+trainMatrix[,2:7]=as.data.frame(t(km.train.6$centers))
+trainMatrix[,1]=c("duration_seconds","miles","tip","extra_charges","total_no_tip")
+colnames(trainMatrix) = c("ClusterName","ClusterOne","ClusterTwo","ClusterThree","ClusterFour","ClusterFive","ClusterSix")
+
+trainMatrix<-melt(trainMatrix,id.vars="ClusterName")
+
+ggplot(trainMatrix, aes(x=ClusterName,y=value, colour=variable, group=variable )) + geom_line()+geom_point(size = 3)+ggtitle("Training data centers 6 clusters Kmeans with selected variables")+ theme(plot.title = element_text(hjust=0.5, size=15),axis.text.x = element_text(angle=55, hjust=1))
+```
+Let us plot without cluster three
+```{r}
+trainMatrix=as.data.frame(matrix(nrow=5, ncol=6))
+
+trainMatrix[,2:6]=as.data.frame(t(km.train.6$centers[c(1,2,4,5,6),]))
+trainMatrix[,1]=c("duration_seconds","miles","tip","extra_charges","total_no_tip")
+colnames(trainMatrix) = c("ClusterName","ClusterOne","ClusterTwo","ClusterFour","ClusterFive","ClusterSix")
+trainMatrix<-melt(trainMatrix,id.vars="ClusterName")
+
+ggplot(trainMatrix, aes(x=ClusterName,y=value, colour=variable, group=variable )) + geom_line()+geom_point(size = 3)+ggtitle("Training data centers 6 clusters Kmeans with fare related variables")+ theme(plot.title = element_text(hjust=0.5, size=15),axis.text.x = element_text(angle=55, hjust=1))
+```
+
+Let us try to select **traffic** related variables
+```{r}
+head(cleaned_data)
+```
+
+```{r}
+require(caTools)
+set.seed(232323)
+
+#select only numeric variables
+quant_data=cleaned_data[,c("speed_pickup_start","bus_count_pickup_start","gps_pings_pickup_start","speed_dropoff_end","bus_count_dropoff_end","gps_pings_dropoff_end")]
+sample = sample.split(quant_data, SplitRatio = .7)
+
+train = subset(quant_data, sample == TRUE)
+test  = subset(quant_data, sample == FALSE)
+
+trainS=scale(train)
+testS=scale(test,center = colMeans(train),scale = apply(train,2,sd))
+
+```
+
+Let us now train the models again
+```{r}
+res.3 <- as.data.frame(matrix(nrow=6,ncol=3))
+colnames(res.3) <- c("k", "train.VAF","holdout.VAF")
+rownames(res.3)<-c()
+n=1
+
+for (k in seq(2,7)){
+        res.3[n,"k"]=k
+        km.train <- kmeans(trainS, algorithm="Lloyd",centers = k, nstart = 50,iter.max=100)
+        res.3[n,"train.VAF"] <- 1 - km.train$tot.withinss / km.train$totss
+        km.holdout <- kmeans(testS, centers = km.train$centers,algorithm="Lloyd", nstart = 1,iter.max=100)
+        res.3[n,"holdout.VAF"] <- 1 - km.holdout$tot.withinss / km.holdout$totss
+        n=n+1
+}
+res.3
+```
+
+Let us choose k=7 and plot again
+```{r}
+km.train.7.traffic <- kmeans(trainS, algorithm="Lloyd",centers = 7, nstart = 50, iter.max=1000)
+km.train.7.traffic.VAF=1 - km.train.7.traffic$tot.withinss / km.train.7.traffic$totss
+km.train.7.traffic.VAF
+```
+
+```{r}
+trainMatrix=as.data.frame(matrix(nrow=7, ncol=8))
+
+trainMatrix[,2:8]=as.data.frame(t(km.train.7.traffic$centers))
+trainMatrix[,1]=c("speed_pickup_start","bus_count_pickup_start","tip","gps_pings_pickup_start","speed_dropoff_end","bus_count_dropoff_end","gps_pings_dropoff_end")
+colnames(trainMatrix) = c("ClusterName","ClusterOne","ClusterTwo","ClusterFour","ClusterFive","ClusterSix","ClusterSeven")
+trainMatrix<-melt(trainMatrix,id.vars="ClusterName")
+
+ggplot(trainMatrix, aes(x=ClusterName,y=value, colour=variable, group=variable )) + geom_line()+geom_point(size = 3)+ggtitle("Training data centers 7 clusters Kmeans with traffic related variables")+ theme(plot.title = element_text(hjust=0.5, size=15),axis.text.x = element_text(angle=55, hjust=1))
+```
+
+## K means without tip
+Money related K means
+```{r}
+require(caTools)
+set.seed(232323)
+
+#select only numeric variables
+quant_data=cleaned_data[,c("duration_seconds","miles","extra_charges","total_no_tip")]
+sample = sample.split(quant_data[,"miles"], SplitRatio = .7)
+
+train = subset(quant_data, sample == TRUE)
+test  = subset(quant_data, sample == FALSE)
+
+trainS=scale(train)
+testS=scale(test,center = colMeans(train),scale = apply(train,2,sd))
+```
+
+```{r}
+km.train.5.no_tip<- kmeans(trainS, algorithm="Lloyd",centers = 3, nstart = 50, iter.max=1000)
+km.train.5.no_tip_VAF=1 - km.train.5.no_tip$tot.withinss / km.train.5.no_tip$totss
+km.train.5.no_tip_VAF
+km.train.5.no_tip$centers
+```
+
+```{r}
+library(reshape2)
+library(ggpubr)
+trainMatrix=as.data.frame(matrix(nrow=4, ncol=4))
+
+trainMatrix[,2:4]=as.data.frame(t(km.train.5.no_tip$centers))
+trainMatrix[,1]=c("duration_seconds","miles","extra_charges","total_no_tip")
+colnames(trainMatrix) = c("ClusterName","ClusterOne","ClusterTwo","ClusterThree")
+
+trainMatrix<-melt(trainMatrix,id.vars="ClusterName")
+
+ggplot(trainMatrix, aes(x=ClusterName,y=value, colour=variable, group=variable )) + geom_line()+geom_point(size = 3)+ggtitle("3 clusters Kmeans with duration and money related variables")+ theme(plot.title = element_text(hjust=0.5, size=15),axis.text.x = element_text(angle=55, hjust=1))
+```
+
+Traffic related data:
+```{r}
+require(caTools)
+set.seed(232323)
+
+#select only numeric variables
+quant_data=cleaned_data[,c("speed_pickup_start","bus_count_pickup_start","gps_pings_pickup_start","speed_dropoff_end","bus_count_dropoff_end","gps_pings_dropoff_end")]
+sample = sample.split(quant_data[,"speed_pickup_start"], SplitRatio = .7)
+
+train = subset(quant_data, sample == TRUE)
+test  = subset(quant_data, sample == FALSE)
+
+trainS=scale(train)
+testS=scale(test,center = colMeans(train),scale = apply(train,2,sd))
+```
+
+```{r}
+km.train.5.no_tip<- kmeans(trainS, algorithm="Lloyd",centers = 5, nstart = 50, iter.max=1000)
+km.train.5.no_tip_VAF=1 - km.train.5.no_tip$tot.withinss / km.train.5.no_tip$totss
+km.train.5.no_tip_VAF
+km.train.5.no_tip$centers
+```
+
+```{r}
+library(reshape2)
+library(ggpubr)
+trainMatrix=as.data.frame(matrix(nrow=6, ncol=6))
+
+trainMatrix[,2:6]=as.data.frame(t(km.train.5.no_tip$centers))
+trainMatrix[,1]=c("speed_pickup_start","bus_count_pickup_start","gps_pings_pickup_start","speed_dropoff_end","bus_count_dropoff_end","gps_pings_dropoff_end")
+colnames(trainMatrix) = c("ClusterName","ClusterOne","ClusterTwo","ClusterThree","ClusterFour","ClusterFive")
+
+trainMatrix<-melt(trainMatrix,id.vars="ClusterName")
+
+ggplot(trainMatrix, aes(x=ClusterName,y=value, colour=variable, group=variable )) + geom_line()+geom_point(size = 3)+ggtitle("Training data centers 5 clusters Kmeans with selected variables")+ theme(plot.title = element_text(hjust=0.5, size=15),axis.text.x = element_text(angle=55, hjust=1))
+```
+
+## K means with some major variables
+```{r}
+head(cleaned_data)
+```
+
+```{r}
+require(caTools)
+set.seed(232323)
+
+#select only numeric variables
+quant_data=cleaned_data[,c("bus_count_pickup_start","bus_count_dropoff_end","speed_pickup_start","speed_dropoff_end","miles","duration_seconds","total_no_tip")]
+sample = sample.split(quant_data[,"speed_pickup_start"], SplitRatio = .7)
+
+train = subset(quant_data, sample == TRUE)
+test  = subset(quant_data, sample == FALSE)
+
+trainS=scale(train)
+testS=scale(test,center = colMeans(train),scale = apply(train,2,sd))
+```
+
+```{r}
+km.train.4.no_tip<- kmeans(trainS, algorithm="Lloyd",centers = 4, nstart = 50, iter.max=1000)
+km.train.4.no_tip_VAF=1 - km.train.4.no_tip$tot.withinss / km.train.4.no_tip$totss
+km.train.4.no_tip_VAF
+km.train.4.no_tip$centers
+```
+
+```{r}
+library(reshape2)
+library(ggpubr)
+trainMatrix=as.data.frame(matrix(nrow=7, ncol=5))
+
+trainMatrix[,2:5]=as.data.frame(t(km.train.4.no_tip$centers))
+trainMatrix[,1]=c("bus_count_pickup_start","bus_count_dropoff_end","speed_pickup_start","speed_dropoff_end","miles","duration_seconds","total_no_tip")
+colnames(trainMatrix) = c("ClusterName","ClusterOne","ClusterTwo","ClusterThree","ClusterFour")
+
+trainMatrix<-melt(trainMatrix,id.vars="ClusterName")
+
+ggplot(trainMatrix, aes(x=ClusterName,y=value, colour=variable, group=variable )) + geom_line()+geom_point(size = 3)+ggtitle("4 clusters Kmeans with selected variables")+ theme(plot.title = element_text(hjust=0.5, size=15),axis.text.x = element_text(angle=55, hjust=1))
+```
+
+Cluster one: High traffic low speed with short distance inexpensive trip
+Cluster two: Medium traffic with high speed long distance expensive trip
+Cluster three: Medium traffic with short distance with high speed inexpensive trip
+Cluster four: Low traffic short distance with high speend inexpensive trip
+
+
+
+
+```{r}
+require(caTools)
+set.seed(232323)
+
+#select only numeric variables
+quant_data=cleaned_data[,c("speed_pickup_start","speed_dropoff_end","miles","total_no_tip")]
+sample = sample.split(quant_data[,"speed_pickup_start"], SplitRatio = .7)
+
+train = subset(quant_data, sample == TRUE)
+test  = subset(quant_data, sample == FALSE)
+
+trainS=scale(train)
+testS=scale(test,center = colMeans(train),scale = apply(train,2,sd))
+```
+
+
+```{r}
+km.train.4.no_tip<- kmeans(trainS, algorithm="Lloyd",centers = 4, nstart = 50, iter.max=1000)
+km.train.4.no_tip_VAF=1 - km.train.4.no_tip$tot.withinss / km.train.4.no_tip$totss
+km.train.4.no_tip_VAF
+km.train.4.no_tip$centers
+```
+
+```{r}
+library(reshape)
+library(ggpubr)
+trainMatrix=as.data.frame(matrix(nrow=4, ncol=5))
+
+trainMatrix[,2:5]=as.data.frame(t(km.train.4.no_tip$centers))
+trainMatrix[,1]=c("speed_pickup_start","speed_dropoff_end","miles","total_no_tip")
+colnames(trainMatrix) = c("ClusterName","ClusterOne","ClusterTwo","ClusterThree","ClusterFour")
+
+trainMatrix<-melt(trainMatrix,id.vars="ClusterName")
+
+ggplot(trainMatrix, aes(x=ClusterName,y=value, colour=variable, group=variable )) + geom_line()+geom_point(size = 3)+ggtitle("4 clusters Kmeans with selected variables")+ theme(plot.title = element_text(hjust=0.5, size=15),axis.text.x = element_text(angle=55, hjust=1))
+```
+Cluster one: Long distance expensive trip with high speed
+Cluster two: Short distance inexpensive trip with high speed
+Cluster three: Medium distance medium expensive trip with medium speed
+Cluster four: Short distance inexpensive trip with low speed
+
+
+## K modes clustering (how to test kmodes?? How to calculate MAF??)
+Let us try kmodes on categorical variables. Let us first select categorical variables.
+```{r}
+head(cleaned_data)
+```
+
+Let us sample again (Only pick categorical variables)
+```{r}
+require(caTools)
+set.seed(232323)
+
+#select only numeric variables
+quant_data=cleaned_data[,c("payment_type","speed_category_pickup_start","speed_category_dropoff_end","region_pickup","region_dropoff", "ride_type")]
+sample = sample.split(quant_data[,"payment_type"], SplitRatio = .7)
+
+train = subset(quant_data, sample == TRUE)
+test  = subset(quant_data, sample == FALSE)
+```
+
+Let us do K-modes clustering
+```{r}
+library(klaR)
+help(kmodes)
+kmodes.result=kmodes(data=train,3)
+names(kmodes.result)
+```
+
+```{r}
+kmodes.result$cluster
+```
+
+Create a matrix with clustering result.
+```{r}
+clustering.matrix=matrix(0,nrow=350000,ncol=7)
+colnames(clustering.matrix)=c("ClusterName","payment_type","speed_category_pickup_start","speed_category_dropoff_end","region_pickup","region_dropoff", "ride_type")
+clustering.matrix=as.data.frame(clustering.matrix)  
+clustering.matrix[,2:8]=train
+clustering.matrix[,"ClusterName"][kmodes.result$cluster==1]="ClusterOne"
+clustering.matrix[,"ClusterName"][kmodes.result$cluster==2]="ClusterTwo"
+clustering.matrix[,"ClusterName"][kmodes.result$cluster==3]="ClusterThree"
+clustering.matrix
+```
+
+Visualize variables vs clusters
+```{r}
+par(mfrow=c(3,2))
+
+ggplot(clustering.matrix, aes(ClusterName, fill = payment_type)) + geom_bar()+
+labs(title = "Payment type among different groups", x = "Cluster Name", y = "payment_type")
+
+ggplot(clustering.matrix, aes(ClusterName, fill = ride_type)) + geom_bar()+
+labs(title = "Start weekday among different groups", x = "Cluster Name", y = "start_weekday")
+
+ggplot(clustering.matrix, aes(ClusterName, fill = speed_category_pickup_start)) + geom_bar()+
+labs(title = "Pick up speed among different groups", x = "Cluster Name", y = "speed_category_pickup_start")
+
+ggplot(clustering.matrix, aes(ClusterName, fill = speed_category_dropoff_end)) + geom_bar()+
+labs(title = "Dropoff speed among different groups", x = "Cluster Name", y = "speed_category_dropoff_end")
+
+ggplot(clustering.matrix, aes(ClusterName, fill = region_pickup)) + geom_bar()+
+labs(title = "Pickup region among different groups", x = "Cluster Name", y = "region_pickup")
+
+ggplot(clustering.matrix, aes(ClusterName, fill = region_dropoff)) + geom_bar()+
+labs(title = "Dropoff region among different groups", x = "Cluster Name", y = "region_dropoff")
+```
+
+Do k modes only for regions
+```{r}
+require(caTools)
+set.seed(232323)
+
+#select only numeric variables
+quant_data=cleaned_data[,c("region_pickup","region_dropoff", "ride_type")]
+sample = sample.split(quant_data[,"region_pickup"], SplitRatio = .7)
+
+train = subset(quant_data, sample == TRUE)
+test  = subset(quant_data, sample == FALSE)
+```
+
+```{r}
+library(klaR)
+help(kmodes)
+kmodes.result=kmodes(data=train,2)
+names(kmodes.result)
+```
+
+```{r}
+clustering.matrix=matrix(0,nrow=350001,ncol=4)
+colnames(clustering.matrix)=c("ClusterName","region_pickup","region_dropoff", "ride_type")
+clustering.matrix=as.data.frame(clustering.matrix)  
+clustering.matrix[,2:4]=train
+clustering.matrix[,"ClusterName"][kmodes.result$cluster==1]="ClusterOne"
+clustering.matrix[,"ClusterName"][kmodes.result$cluster==2]="ClusterTwo"
+clustering.matrix
+```
+
+
+```{r}
+ggplot(clustering.matrix, aes(ClusterName, fill = region_pickup)) + geom_bar()+
+labs(title = "Pickup region among different groups", x = "Cluster Name", y = "region_pickup")
+
+ggplot(clustering.matrix, aes(ClusterName, fill = region_dropoff)) + geom_bar()+
+labs(title = "Dropoff region among different groups", x = "Cluster Name", y = "region_dropoff")
+
+ggplot(clustering.matrix, aes(ClusterName, fill = ride_type)) + geom_bar()+
+labs(title = "Ride type among different groups", x = "Cluster Name", y = "ride_type")
+
+```
+
+Do k modes for rideshare type, weekend and tip_flag
+```{r}
+head(cleaned_data)
+```
+
+```{r}
+require(caTools)
+set.seed(232323)
+
+#select only numeric variables
+quant_data=cleaned_data[,c("flag_weekend", "tip_flag")]
+sample = sample.split(quant_data[,"flag_weekend"], SplitRatio = .7)
+
+train = subset(quant_data, sample == TRUE)
+test  = subset(quant_data, sample == FALSE)
+```
+
+```{r}
+library(klaR)
+kmodes.result=kmodes(data=train,2)
+names(kmodes.result)
+```
+
+```{r}
+clustering.matrix=matrix(0,nrow=350000,ncol=3)
+colnames(clustering.matrix)=c("ClusterName","flag_weekend", "tip_flag")
+clustering.matrix=as.data.frame(clustering.matrix)  
+clustering.matrix[,2:3]=train
+clustering.matrix[,"ClusterName"][kmodes.result$cluster==1]="ClusterOne"
+clustering.matrix[,"ClusterName"][kmodes.result$cluster==2]="ClusterTwo"
+clustering.matrix
+```
+
+```{r}
+library(ggplot2)
+cbbPalette <- c("#000000", "#E69F00")
+cbbPalette2<-c("#56B4E9", "#CC79A7")
+ggplot(clustering.matrix, aes(ClusterName, fill = flag_weekend)) + geom_bar()+
+labs(title = "Trips on weekend vs trips not on weekend between different groups", x = "Cluster Name", y = "flag_weekend")+
+scale_fill_manual(values=cbbPalette, labels=c("non-weekend", "weekend"))
+
+ggplot(clustering.matrix, aes(ClusterName, fill = tip_flag)) + geom_bar()+
+labs(title = "Tip vs nontip between different groups", x = "Cluster Name", y = "tip_flag")+
+scale_fill_manual(values=cbbPalette2, labels=c("non-tip", "tip"))
+
+
+```
+
+```{r}
+library(poLCA)
+f1=cbind(payment_type,speed_category_pickup_start,speed_category_dropoff_end,region_pickup,region_dropoff, ride_type)~1
+poLCA(f1,train,nclass=4,nrep=10,tol=.001,verbose=FALSE, graphs=TRUE)
+```
+
+## K nearest neighbor
+```{r}
+library(class)
+set.seed(232323)
+require(caTools)
+set.seed(232323)
+
+#select only numeric variables
+quant_data=cleaned_data[,c("tip_flag","duration_seconds","miles","fare","tolls","extra_charges","trip_total","speed_pickup_start","bus_count_pickup_start","gps_pings_pickup_start","speed_dropoff_end","bus_count_dropoff_end","gps_pings_dropoff_end")]
+sample = sample.split(quant_data, SplitRatio = .7)
+
+train = subset(quant_data, sample == TRUE)
+test  = subset(quant_data, sample == FALSE)
+
+
+trainS=scale(train)
+testS=scale(test,center = colMeans(train),scale = apply(train,2,sd))
+trainS[,"tip_flag"]=as.factor(train[,"tip_flag"])
+testS[,"tip_flag"]=as.factor(testS[,"tip_flag"])
+```
+
+k=1
+```{r}
+knn.result.1=knn(trainS,testS,trainS[,"tip_flag"],k=1)
+```
+
