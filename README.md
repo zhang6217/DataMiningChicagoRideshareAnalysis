@@ -49,15 +49,23 @@ This project is a look at the tipping behaviors of customers of rideshares or ta
 
 ## Method included in our analysis
 1. PCA
-2. Clustering: 
+2. Clustering:
+
 	i. K means
+	
 	ii. K modes
 3. Classification and regression: 
+
 	i. K Nearest Neighbor
+	
 	ii. Logistic Regression
+	
 	iii. Decision Tree
+	
 	iv. Bagging, AdaBossting, and Random Forest
+	
 	v. Latent Class Regression
+	
 	vi. Ensemble Model
 
 ## List of Data Sources
