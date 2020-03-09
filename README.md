@@ -2,11 +2,11 @@
 
 Repository for Data Mining Principles final project at the University of Chicago. Created by @lucia-ronchi, @luisflosi, @zhang6217, and @SophieHuGit
 
-This project is a look at the impact of rideshare transportation on traffic in the city of Chicago. Our goal is to compare pre-rideshare taxi trip data with current rideshare data. We will also cross-reference this data with CTA train and bus stops.
+This project is a look at the tipping behaviors of customers of rideshares or taxi in the city of Chicago. Our goal is to find potential customers who don't usually tip so we can target at and encourage them to start to tip. 
 
 ## Questions to Answer
 
-- Understanding the tipping behavior of ride share passanges and taxi passangers
+- Understanding the tipping behavior of ride share passangers and taxi passangers
 
 ## Our Tech Stack
 
@@ -29,6 +29,8 @@ This project is a look at the impact of rideshare transportation on traffic in t
   
 - Analysis
   * Tableau
+  * Python
+  * R studio
 
 ## Our Automation Process
 1. Create MySQL instance in GCP (+50GB)
@@ -45,7 +47,19 @@ This project is a look at the impact of rideshare transportation on traffic in t
  
 	v. final_trips.csv -> trips
 
-  
+## Method included in our analysis
+1. PCA
+2. Clustering: 
+	i. K means
+	ii. K modes
+3. Classification and regression: 
+	i. K Nearest Neighbor
+	ii. Logistic Regression
+	iii. Decision Tree
+	iv. Bagging, AdaBossting, and Random Forest
+	v. Latent Class Regression
+	vi. Ensemble Model
+
 ## List of Data Sources
 
 - [Transportation Network Providers - Vehicles](https://data.cityofchicago.org/Transportation/Transportation-Network-Providers-Vehicles/bc6b-sq4u "TNP Vehicles")
