@@ -1,8 +1,9 @@
 # Chicago Rideshare Analysis
 
-Repository for Data Mining Principles final project at the University of Chicago. Created by @lucia-ronchi, @luisflosi, @zhang6217, and @SophieHuGit
+Repository for Data Mining Principles final project at The University of Chicago. Created by @lucia-ronchi, @luisflosi, @zhang6217, and @SophieHuGit
 
-This project is a look at the tipping behaviors of customers of rideshares or taxi in the city of Chicago. Our goal is to find potential customers who don't usually tip so we can target at and encourage them to start to tip.
+This project is a look at the tipping behavior of customers of Rideshare and Taxi in the city of Chicago. 
+Our goal is to predict trips where there won't be a tip so that we can target the riders, encouraging them to tip.
 
 The data preparation process was part of another group project, explained in [this](https://github.com/ltyomkin/Chicago-Rideshare-Analysis) repository.
 
@@ -45,7 +46,7 @@ The final presentation for the Data Mining class incuding all insights can be fo
 
 3. Classification and regression: 
 
-	i. K Nearest Neighbor
+	i. K Nearest Neighbors
 	
 	ii. Logistic Regression
 	
