@@ -7,10 +7,6 @@ Our goal is to predict trips where there won't be a tip so that we can target th
 
 The data preparation process was part of another group project, explained in [this](https://github.com/ltyomkin/Chicago-Rideshare-Analysis) repository.
 
-## Final insights presentation
-
-The final presentation for the Data Mining class incuding all insights can be found [here](https://docs.google.com/presentation/d/1UP7t70tDmuBxoUbk3_V8I8wSe4CwXWFi35FJV_JuiSo/edit?usp=sharing)
-
 ## Questions to Answer
 
 - Understanding the tipping behavior of ride share passangers and taxi passangers
@@ -34,7 +30,7 @@ The final presentation for the Data Mining class incuding all insights can be fo
   * R studio
 
 
-## Method included in our analysis
+## Methods included in our analysis
 1. PCA
 2. Clustering:
 
