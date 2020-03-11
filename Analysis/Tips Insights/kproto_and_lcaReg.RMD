@@ -3,12 +3,8 @@
 ```{r Optimize Processing, include=FALSE}
 pkgs <- c('doParallel', 'foreach')
 lapply(pkgs, require, character.only = T)
-#Find out how many cores are available (if you don't already know)
 cores<-detectCores()
-#Create cluster with desired number of cores, leave one open for the machine         
-#core processes
 cl <- makeCluster(cores[1]-1)
-#Register cluster
 registerDoParallel(cl)
 ```
 
@@ -24,275 +20,6 @@ train = read.csv(paste(dataPath,"tiny_sample_train.csv",sep="/"))
 test = read.csv(paste(dataPath,"tiny_sample_test.csv",sep="/"))
 train = train[,c(3:ncol(train))]
 test = test[,c(3:ncol(test))]
-```
-
-## K-Means, K-Modes and Cluster Reg Functions
-
-```{r Functions, include=FALSE}
-fun.okc.2= function (data = data, nclust = nclust, lnorm = lnorm, tolerance = tolerance) {
-  M = nrow(data)
-  N = ncol(data)
-  K = nclust
-  niterations = 50
-  #    datanorm = apply(data, 2, fun.normalize)
-  datanorm = scale(data)
-  S = matrix(sample(c(0, 1), M * K, replace = TRUE), M, K)
-  S = cbind(S, rep(1, M))
-  W = matrix(runif(N * K), K, N)
-  W = rbind(W, rep(0, N))
-  sse = rep(0, niterations)
-  oprevse = exp(70)
-  opercentse = 1
-  i = 1
-  while ((i <= niterations) & (opercentse > tolerance)) {
-    for (k in 1:K) {
-      sminusk = S[, -k]
-      wminusk = W[-k, ]
-      s = as.matrix(S[, k])
-      w = t(as.matrix(W[k, ]))
-      dstar = datanorm - sminusk %*% wminusk
-      prevse = exp(70)
-      percentse = 1
-      l = 1
-      while ((l <= niterations) & (percentse > tolerance)) {
-        for (m in 1:N) {
-          if (lnorm == 2) {
-            w[1, m] = mean(dstar[s == 1, m], na.rm = TRUE)
-          }
-          if (lnorm == 1) {
-            w[1, m] = median(dstar[s == 1, m], na.rm = TRUE)
-          }
-        }
-        for (m in 1:M) {
-          if (lnorm == 2) {
-            ss1 = sum((dstar[m, ] - w[1, ])^2, na.rm = TRUE)
-            ss0 = sum((dstar[m, ])^2, na.rm = TRUE)
-          }
-          if (lnorm == 1) {
-            ss1 = sum(abs(dstar[m, ] - w[1, ]), na.rm = TRUE)
-            ss0 = sum(abs(dstar[m, ]), na.rm = TRUE)
-          }
-          if (ss1 <= ss0) {
-            s[m, 1] = 1
-          }
-          if (ss1 > ss0) {
-            s[m, 1] = 0
-          }
-        }
-        if (sum(s) == 0) {
-          s[sample(1:length(s), 2)] = 1
-        }
-        if (lnorm == 2) {
-          se = sum((dstar - s %*% w)^2, na.rm = TRUE)
-        }
-        if (lnorm == 1) {
-          se = sum(abs(dstar - s %*% w), na.rm = TRUE)
-        }
-        percentse = 1 - se/prevse
-        prevse = se
-        l = l + 1
-      }
-      S[, k] = as.vector(s)
-      W[k, ] = as.vector(w)
-    }
-    if (lnorm == 2) 
-      sse[i] = sum((datanorm - S %*% W)^2, na.rm = TRUE)/sum((datanorm - 
-                                                                mean(datanorm, na.rm = TRUE))^2, na.rm = TRUE)
-    if (lnorm == 1) 
-      sse[i] = sum(abs(datanorm - S %*% W), na.rm = TRUE)/sum(abs(datanorm - 
-                                                                    median(datanorm, na.rm = TRUE)), na.rm = TRUE)
-    if (lnorm == 2) {
-      ose = sum((datanorm - S %*% W)^2, na.rm = TRUE)
-    }
-    if (lnorm == 1) {
-      ose = sum(abs(datanorm - S %*% W), na.rm = TRUE)
-    }
-    opercentse = (oprevse - ose)/oprevse
-    oprevse = ose
-    i = i + 1
-  }
-  if (lnorm == 2) 
-    vaf = cor(as.vector(datanorm), as.vector(S %*% W), use = "complete.obs")^2
-  if (lnorm == 1) 
-    vaf = 1 - sse[i - 1]
-  rrr = list(Data = data, Normalized.Data = datanorm, Tolerance = tolerance, 
-             Groups = S[, 1:K], Centroids = round(W[1:K, ], 2), SSE.Percent = sse[1:i - 
-                                                                                    1], VAF = vaf)
-  
-  
-  return(rrr)
-}
-
-komeans=function (data = data, nclust = nclust, lnorm = lnorm, nloops = nloops, tolerance = tolerance, seed = seed) {
-  prevsse = 100
-  set.seed(seed)
-  for (i in 1:nloops) {
-    z = fun.okc.2(data = data, nclust = nclust, lnorm = lnorm, 
-                  tolerance = tolerance)
-    if (z$SSE.Percent[length(z$SSE.Percent[z$SSE.Percent >  0])] < prevsse) {
-      prevsse = z$SSE.Percent[length(z$SSE.Percent[z$SSE.Percent >  0])]
-      ind = i
-      z.old = z
-    }
-  }
-  return(list(data = z.old$Data,
-              Normalized.Data = z.old$Normalized.Data, 
-              Group = z.old$Group %*% as.matrix(2^(0:(nclust-1)) ),
-              Centroids = z.old$Centroids,
-              Tolerance = z.old$Tolerance, 
-              SSE.Pecent = z.old$SSE.Percent,
-              VAF = z.old$VAF,
-              iteration = ind, 
-              seed = seed))
-}
-
-kmodes=function (data = data, nclust = nclust, niterations = niterations, nloops = nloops, seed = seed){
-  prevMAF = -1
-  niterations = 25
-  set.seed(seed)
-  for (i in 1:nloops) {
-    z = fun.kmodes(data = data, nclust = nclust,niterations=niterations)
-    if (z$MAF > prevMAF) {
-      prevMAF = z$MAF
-      ind = i
-      z.old = z
-    }
-  }
-  return(list(data = z.old$Data, 
-              Group = z.old$Groups, Centroids = z.old$Centroids,  
-              Cluster.Sizes= z.old$Cluster.Sizes,
-              MAF = z.old$MAF, iteration = ind, 
-              seed = seed))
-}
-
-fun.kmodes=function (data = data, nclust = nclust,niterations=niterations) {
-  data=as.data.frame(data)
-  nam=names(data)
-  data=apply(data,2,factor)
-  M = nrow(data)
-  N = ncol(data)
-  K = nclust
-  S = sample(1:K,M,replace=TRUE)
-  W = matrix("NA", K, N)
-  datahat=matrix("NA",M,N)
-  i = 1
-  while ((i <= niterations)) {
-    for(j in 1:N) {
-      W[,j]=tapply(data[,j],S,fun.mod)
-    }
-    
-    hst= 0
-    #               print(W)
-    for(j in 1:M) {
-      tmp=rep(0,K)
-      for (k in 1:K){
-        
-        ttt = (data[j,])==(W[k,])
-        tmp[k]= length(ttt[ttt==TRUE])		
-        
-      }	
-      l = seq(1:K)[tmp==max(tmp)]
-      if(length(l) == 1) S[j]=l 
-      if(length(l) > 1) S[j] = sample(l,1)
-      datahat[j,] = W[S[j],]
-      hst=hst+max(tmp)
-    }	
-    #                print(c(i, hst))
-    
-    #			for(j in 1:M) {
-    #				for(n in 1:N) {
-    #				if(!is.na(data[j,n]) && (datahat[j,n] == data[j,n])) hst[i] = hst[i]+1
-    
-    i=i+1
-  }
-  W=data.frame(W)
-  names(W) = nam
-  W = W[sort(unique(S)),]
-  if(nrow(W) >1) {row.names(W) = sort(unique(S))}    
-  rrr = list(Groups = S, Cluster.Sizes = table(S), Centroids = W, MAF = hst/(M*N))
-  
-  
-  return(rrr)
-}
-
-fun.mod=function(x){
-  
-  y=factor(x)
-  z=table(y)
-  zz=z[z==max(z)]
-  n=names(zz)
-  if(length(n) > 1) n=sample(n,1)
-  return(n)
-  
-  
-}
-
-clustreg=function(dat,k,tries,sed,niter)
-{
-  
-  set.seed(sed)
-  dat=as.data.frame(dat)
-  a_aic=rep(NA,niter)
-  res=list()
-  aic.best=10000000000
-  for(l in 1:tries) 
-  {
-    c = sample(1:k,nrow(dat),replace=TRUE)
-    yhat=rep(NA,nrow(dat))
-    for(i in 1:niter) {
-      print(i)
-      resid=pred=matrix(0,nrow(dat),k)
-      for(j in 1:k)
-      {	
-        print(dat[c==j,])
-        pred[,j]=predict(glm(tip_flag ~ . -1,data=dat[c==j,],family=binomial(link="logit")),newdata=dat,type="response")
-        resid[,j] = (pred[,j]-(as.numeric(dat[,1])-1))^2
-      }
-      c_old = c
-      c = apply(resid,1,which.min)
-      for(m in 1:nrow(dat)) {yhat[m]=ifelse(pred[m,c[m]]<0.5,0,1)}
-      rss = c()
-      for(m in 1:nrow(dat)) {rss=c(rss,(resid[m,c[m]])^2)}
-      p = sum(as.numeric(dat$tip_flag)-1)/nrow(dat)
-      LL = sum((as.numeric(dat$tip_flag)-1)*log(p)+(1-(as.numeric(dat$tip_flag)))*log(1-p))
-      a_aic[i] = -2*LL+2*(ncol(dat)-1)
-      #print(a_aic[i])
-    }
-    
-    if(a_aic[niter] < aic.best) 
-    {	
-      aic.best=a_aic[niter]
-      l.best=l
-      c.best=c
-      yhat.best=yhat
-    }
-  }
-  
-  res=list("Complete")
-  for(i in 1:k) {res=list(summary(glm(tip_flag ~ . -1,data=dat[c.best==i,],family=binomial(link="logit"))),res)}
-  
-  return(list(data=dat,nclust=k,tries=tries,seed=sed,aic.best=aic.best,number.loops=niter,
-              Best.try=l.best,cluster=c.best,results=res))
-}
-
-clustreg.predict=function(results,newdat){
-  
-  yhat=rep(NA,nrow(newdat))
-  resid=pred=matrix(0,nrow(newdat),length(table(results$cluster)))
-  
-  for(j in 1:length(table(results$cluster))){			
-    pred[,j]=predict(glm(tip_flag ~ . -1,data=results$data[results$cluster==j,],family=binomial(link="logit")),newdata=newdat,
-                     type="response")		
-    resid[,j] = (pred[,j]-newdat[,1])^2
-  }
-  
-  c = apply(resid,1,which.min)
-  for(m in 1:nrow(newdat)) {yhat[m]=ifelse(pred[m,c[m]]<0.5,0,1)}
-  p_aic = nrow(newdat)*log(sum(rss)/nrow(newdat)) + 2*(ncol(newdat)-1)	
-  
-  return(list(results=results,newdata=newdat,cluster=c,yhat=yhat,p_aic=p_aic))
-  
-}
 ```
 
 ## Define variables of interest
@@ -369,31 +96,6 @@ kmean_chosen$size
 ```
 
 Great majority of "regular trips", but not crushing majority
-
-## Run K-Modes
-
-```{r}
-cat_preds = c(7,8,9,24,21,19)
-train_cat_preds = train[,cat_preds]
-MAF = list()
-for (i in 2:5) {
-  kmode = kmodes(data = train_cat_preds, nclust = i, niterations = 20, nloops = 5, seed = seed)
-  MAF[i] = kmode$MAF
-}
-MAF[1] = NULL
-```
-
-## Analyze MAFs
-
-```{r}
-maf_df = as.data.frame(MAF)
-colnames(maf_df) = c("2","3","4","5")
-plot(x = colnames(maf_df), y = maf_df, xlab = "Number of groups", ylab = "MAF", type = "l",
-     ylim = c(0,1))
-points(x = colnames(maf_df), y = maf_df)
-```
-
-No good gain for any clusters in kmodes
 
 ## Join models with k-prototype
 
@@ -528,15 +230,7 @@ summary(train_clustreg)
 
 Note: rebalanced number of tips and no tips for model to run properly
 
-## Run clusterwise-logistic-regression
-
-```{r}
-# Note: producing overfit on second iteration. Use Flexmix instead.
-bin_clustreg = clustreg(train_clustreg,k = 2,tries = 1,sed=seed,niter = 5)
-#bin_clustreg$results
-```
-
-## Flexmix attempt
+## Flexmix LCA Logistic Regression
 
 ```{r}
 library(flexmix)
@@ -599,14 +293,4 @@ res = list(proto_tot_wss = p_tot_wss,
            train_yhat = train_yhat)
 
 saveRDS(res,paste(dataPath,"lf_regs.rds",sep="/"))
-```
-
-## Load info
-
-``` {r}
-rslt = readRDS(paste(dataPath,"lf_regs.rds",sep="/"))
-chosen_proto = rslt$chosen_proto
-p_tot_wss = rslt$proto_tot_wss
-proto_knn_preds = rslt$proto_knn_preds
-proto_knn_test = rslt$proto_knn_test
 ```
