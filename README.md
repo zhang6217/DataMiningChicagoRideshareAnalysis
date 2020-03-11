@@ -2,7 +2,7 @@
 
 Repository for Data Mining Principles final project at The University of Chicago. Created by @lucia-ronchi, @luisflosi, @zhang6217, and @SophieHuGit
 
-This project is a look at the tipping behavior of customers of Rideshare and Taxi in the city of Chicago. 
+This project takes a look at the tipping behavior of customers of Rideshare and Taxi in the city of Chicago. 
 Our goal is to predict trips where there won't be a tip so that we can target the riders, encouraging them to tip.
 
 The data preparation process was part of another group project, explained in [this](https://github.com/ltyomkin/Chicago-Rideshare-Analysis) repository.
